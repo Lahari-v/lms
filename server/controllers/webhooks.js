@@ -175,6 +175,8 @@ import Course from "../models/Course.js";
 // Clerk Webhook
 export const clerkWebhooks = async (req, res) => {
   try {
+    console.log("🔔 Clerk webhook received");
+
     const payload = req.body;
     const headers = {
       'svix-id': req.headers['svix-id'],
@@ -186,6 +188,7 @@ export const clerkWebhooks = async (req, res) => {
     const event = wh.verify(payload, headers);
 
     const { data, type } = event;
+    console.log(`📦 Clerk Event Type: ${type}`);
 
     switch (type) {
       case 'user.created': {
@@ -196,6 +199,7 @@ export const clerkWebhooks = async (req, res) => {
           imageUrl: data.image_url,
         };
         await User.create(userData);
+        console.log("✅ User created:", userData);
         res.json({});
         break;
       }
@@ -207,30 +211,30 @@ export const clerkWebhooks = async (req, res) => {
           imageUrl: data.image_url,
         };
         await User.findByIdAndUpdate(data.id, userData);
+        console.log("🔁 User updated:", userData);
         res.json({});
         break;
       }
 
       case 'user.deleted': {
         await User.findByIdAndDelete(data.id);
+        console.log("🗑️ User deleted:", data.id);
         res.json({});
         break;
       }
 
       default:
+        console.log("⚠️ Unknown Clerk event:", type);
         res.json({});
     }
   } catch (error) {
-    console.error("Clerk Webhook error:", error.message);
+    console.error("❌ Clerk Webhook error:", error.message);
     res.status(400).json({ success: false, error: error.message });
   }
 };
-
-// Stripe Webhook
-const stripeInstance = new Stripe(process.env.STRIPE_SECRET_KEY);
-
 export const stripeWebhooks = async (req, res) => {
   const sig = req.headers['stripe-signature'];
+  console.log("🔔 Stripe webhook received");
 
   let event;
   try {
@@ -240,21 +244,28 @@ export const stripeWebhooks = async (req, res) => {
       process.env.STRIPE_WEBHOOK_SECRET
     );
   } catch (err) {
-    console.error("Stripe webhook signature verification failed:", err.message);
+    console.error("❌ Stripe webhook signature verification failed:", err.message);
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
+
+  console.log(`📦 Stripe Event Type: ${event.type}`);
 
   switch (event.type) {
     case 'checkout.session.completed': {
       const session = event.data.object;
       const purchaseId = session.metadata.purchaseId;
 
+      console.log("🧾 Checkout session completed:", session.id);
+      console.log("🔗 purchaseId from metadata:", purchaseId);
+
       if (!purchaseId) {
+        console.error("❌ purchaseId missing in metadata");
         return res.status(400).json({ message: "purchaseId missing in metadata" });
       }
 
       const purchaseData = await Purchase.findById(purchaseId);
       if (!purchaseData) {
+        console.error("❌ Purchase not found:", purchaseId);
         return res.status(404).json({ message: "Purchase not found" });
       }
 
@@ -262,17 +273,24 @@ export const stripeWebhooks = async (req, res) => {
       const courseData = await Course.findById(purchaseData.courseId);
 
       if (!userData || !courseData) {
+        console.error("❌ User or Course not found", {
+          userId: purchaseData.userId,
+          courseId: purchaseData.courseId,
+        });
         return res.status(404).json({ message: "User or Course not found" });
       }
 
       courseData.enrolledStudents.push(userData._id);
       await courseData.save();
+      console.log("🎓 User enrolled in course:", courseData.courseTitle);
 
       userData.enrolledCourses.push(courseData._id);
       await userData.save();
+      console.log("📘 Course added to user profile:", userData.name);
 
       purchaseData.status = 'completed';
       await purchaseData.save();
+      console.log("✅ Purchase marked as completed:", purchaseId);
 
       break;
     }
@@ -281,8 +299,10 @@ export const stripeWebhooks = async (req, res) => {
       const paymentIntent = event.data.object;
       const paymentIntentId = paymentIntent.id;
 
+      console.log("❌ Payment failed for intent:", paymentIntentId);
+
       const sessionList = await stripeInstance.checkout.sessions.list({
-        payment_intent: paymentIntentId
+        payment_intent: paymentIntentId,
       });
 
       const session = sessionList.data[0];
@@ -291,13 +311,14 @@ export const stripeWebhooks = async (req, res) => {
         if (purchaseData) {
           purchaseData.status = 'failed';
           await purchaseData.save();
+          console.log("⚠️ Purchase marked as failed:", session.metadata.purchaseId);
         }
       }
       break;
     }
 
     default:
-      console.log(`Unhandled Stripe event type: ${event.type}`);
+      console.log(`⚠️ Unhandled Stripe event type: ${event.type}`);
   }
 
   res.json({ received: true });
