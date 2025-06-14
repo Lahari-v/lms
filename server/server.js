@@ -40,6 +40,10 @@ await connectDB()
 // CORS middleware
 app.use(cors())
 
+
+// ⚠️ Clerk webhook must comze before express.json() for raw body
+app.post('/clerk', express.raw({ type: '*/*' }), clerkWebhooks)
+
 // Normal JSON body parser for other routes
 app.use(express.json())
 
@@ -47,9 +51,6 @@ app.use(express.json())
 app.get('/', (req, res) => {
   res.send("API Working")
 })
-
-// ⚠️ Clerk webhook must come before express.json() for raw body
-app.post('/clerk', express.raw({ type: '*/*' }), clerkWebhooks)
 
 // Start server
 const PORT = process.env.PORT || 5000
