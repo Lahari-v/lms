@@ -39,7 +39,7 @@ export const purchaseCourse = async (req, res)=>{
         const userData = await User.findById(userId)
         const courseData = await Course.findById(courseId)
 
-        if(!userData, !courseData) {
+        if(!userData || !courseData) {
             return res.json({ success: false, message: 'Data not found' })
         }
         const purchaseData = {
@@ -61,7 +61,7 @@ export const purchaseCourse = async (req, res)=>{
                 product_data: {
                     name: courseData.courseTitle
                 },
-                unit_amount: Math.floor(newPurchase.amount) * 100
+                unit_amount: Math.round(newPurchase.amount) * 100
             },
             quantity: 1
         }]
