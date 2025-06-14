@@ -15,22 +15,24 @@ const app = express()
 // Connect to MongoDB
 await connectDB()
 await connectCloudinary()
-
-// Middlewares
+ 
 app.use(cors())
-app.use(clerkMiddleware())
 
-
-// Routes
+ 
 app.post('/clerk', express.raw({ type: '*/*' }), clerkWebhooks) 
+
+app.post('/stripe', bodyParser.raw({ type: 'application/json' }), stripeWebhooks);
+
+app.use(clerkMiddleware())
 app.use(express.json()) 
+
 app.get('/', (req, res) => {
   res.send("API Working")
 })
+
 app.use('/api/educator', express.json(), educatorRouter)
 app.use('/api/course', express.json(), courseRouter)
-app.use('/api/user', express.json(), userRouter) 
-app.post('/stripe', express.raw({ type: 'application/json' }), stripeWebhooks)
+app.use('/api/user', express.json(), userRouter)  
 
 // Port
 const PORT = process.env.PORT || 5000
