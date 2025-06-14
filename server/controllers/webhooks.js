@@ -59,7 +59,7 @@ import User from "../models/User.js"
 
 export const clerkWebhooks = async (req, res) => {
   try {
-    console.log("🔔 Clerk webhook triggered")
+    console.log("Clerk webhook triggered")
 
     const payload = req.body
     const headers = {
@@ -68,17 +68,17 @@ export const clerkWebhooks = async (req, res) => {
       'svix-signature': req.headers['svix-signature'],
     }
 
-    console.log("📩 Headers:", headers)
-    console.log("📩 Payload type:", typeof payload)
+    console.log("Headers:", headers)
+    console.log("Payload type:", typeof payload)
 
     const wh = new Webhook(process.env.CLERK_WEBHOOK_SECRET)
     const event = wh.verify(payload, headers)
 
-    console.log("✅ Webhook verified")
+    console.log("Webhook verified")
 
     const { data, type } = event
-    console.log("📦 Webhook Event Type:", type)
-    console.log("👤 Data:", data)
+    console.log("Webhook Event Type:", type)
+    console.log("Data:", data)
 
      switch (type) {
         case 'user.created': {
@@ -117,7 +117,7 @@ export const clerkWebhooks = async (req, res) => {
 
     res.status(200).json({ success: true })
   } catch (error) {
-    console.error("❌ Webhook error:", error.message)
+    console.error("Webhook error:", error.message)
     res.status(400).json({ success: false, error: error.message })
   }
 }

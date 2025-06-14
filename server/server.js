@@ -41,7 +41,7 @@ await connectDB()
 app.use(cors())
 
 
-// ⚠️ Clerk webhook must comze before express.json() for raw body
+// Clerk webhook must comze before express.json() for raw body
 app.post('/clerk', express.raw({ type: '*/*' }), clerkWebhooks)
 
 // Normal JSON body parser for other routes
