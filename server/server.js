@@ -1,26 +1,58 @@
+// import express from 'express'
+// import cors from 'cors'
+// import 'dotenv/config' 
+// import connectDB from './configs/mongodb.js'
+// import { clerkWebhooks } from './controllers/webhooks.js'
+
+
+// //Initialize Express
+// const app = express()
+
+// //Connect to database
+// await connectDB()
+
+// //Middleware
+// app.use(cors())
+
+// //Routes
+// app.get('/', (req, res)=> res.send("API Working"))
+// app.post('/clerk', express.json(), clerkWebhooks)
+
+// //Port
+// const PORT = process.env.PORT || 5000
+
+// app.listen(PORT, ()=>{
+//     console.log(`Server is running on port ${PORT}`)
+// })
+
 import express from 'express'
 import cors from 'cors'
-import 'dotenv/config' 
+import 'dotenv/config'
 import connectDB from './configs/mongodb.js'
 import { clerkWebhooks } from './controllers/webhooks.js'
 
-
-//Initialize Express
+// Initialize Express
 const app = express()
 
-//Connect to database
+// Connect to MongoDB
 await connectDB()
 
-//Middleware
+// CORS middleware
 app.use(cors())
 
-//Routes
-app.get('/', (req, res)=> res.send("API Working"))
-app.post('/clerk', express.json(), clerkWebhooks)
+// Normal JSON body parser for other routes
+app.use(express.json())
 
-//Port
+// Route for testing
+app.get('/', (req, res) => {
+  res.send("API Working")
+})
+
+// ⚠️ Clerk webhook must come before express.json() for raw body
+app.post('/clerk', express.raw({ type: '*/*' }), clerkWebhooks)
+
+// Start server
 const PORT = process.env.PORT || 5000
-
-app.listen(PORT, ()=>{
-    console.log(`Server is running on port ${PORT}`)
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`)
 })
