@@ -80,7 +80,40 @@ export const clerkWebhooks = async (req, res) => {
     console.log("📦 Webhook Event Type:", type)
     console.log("👤 Data:", data)
 
-    // Rest of your switch-case...
+     switch (type) {
+        case 'user.created': {
+            const userData = {
+                _id: data.id,
+                email: data.email_addresses[0].email_address,
+                name: data.first_name + ' ' + data.last_name,
+                imageUrl: data.image_url,
+            }
+            await User.create(userData)
+            res.json({})
+            break;
+        } 
+
+        case 'user.updated': {
+            const userData = {
+                email: data.email_address[0].email_address,
+                name: data.first_name + " " + data.last_name,
+                imageUrl: data.image_url,
+            }
+            await User.findByIdAndUpdate(data.id, userData)
+            res.json({})
+            break;
+        }
+
+        case 'user.deleted': {
+            await User.findByIdAndDelete(data.id)
+            res.json({})
+            break;
+        }
+    
+        default:
+            break;
+    }
+
 
     res.status(200).json({ success: true })
   } catch (error) {
